@@ -19,18 +19,20 @@ print("Using device:", device)
 
 def get_data_loaders(data_dir, batch_size=32, input_size=224):
     """
-    Create training, validation and test dataloaders using torchvision.datasets.ImageFolder.
+    Create training, validation, and test dataloaders using torchvision.datasets.ImageFolder.
     Assumes folder structure: 
       Dataset/Train/{Real,Fake}, Dataset/Validation/{Real,Fake}, Dataset/Test/{Real,Fake}
     """
-    # Define transforms (data augmentation for training, normalization for all)
+    # Define transforms: Enhanced augmentation for training.
     data_transforms = {
         'Train': transforms.Compose([
-            transforms.Resize((input_size, input_size)),
+            transforms.Resize((input_size + 20, input_size + 20)),
+            transforms.RandomCrop(input_size),
             transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
             transforms.RandomRotation(10),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406],  # imagenet mean/std
+            transforms.Normalize([0.485, 0.456, 0.406],  # Imagenet mean/std
                                  [0.229, 0.224, 0.225])
         ]),
         'Validation': transforms.Compose([
@@ -60,11 +62,11 @@ def get_data_loaders(data_dir, batch_size=32, input_size=224):
     return dataloaders, dataset_sizes, class_names
 
 
-def initialize_model(num_classes, feature_extract=True, fine_tune_from='layer4'):
+def initialize_model(num_classes, feature_extract=True, fine_tune_from_layers=['layer3', 'layer4']):
     """
-    Load a pretrained ResNet18 model, freeze its parameters if feature_extract is True,
-    then unfreeze the parameters for layers that contain the string `fine_tune_from`.
-    Finally, replace the fully connected layer.
+    Load a pretrained ResNet18 model. Freeze its parameters if feature_extract is True,
+    then unfreeze the parameters for layers specified in fine_tune_from_layers.
+    Finally, replace the final fully connected layer.
     """
     model = models.resnet18(pretrained=True)
     
@@ -73,9 +75,9 @@ def initialize_model(num_classes, feature_extract=True, fine_tune_from='layer4')
         for param in model.parameters():
             param.requires_grad = False
 
-        # Unfreeze parameters in the specified block (e.g., 'layer4').
+        # Unfreeze parameters in the specified layers.
         for name, param in model.named_parameters():
-            if fine_tune_from in name:
+            if any(layer in name for layer in fine_tune_from_layers):
                 param.requires_grad = True
                 print(f"Unfreezing parameter: {name}")
 
@@ -116,13 +118,13 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, num_epo
 
                 optimizer.zero_grad()
 
-                # Forward pass; track gradients only if in train phase.
+                # Forward pass; track gradients only if in training phase.
                 with torch.set_grad_enabled(phase == 'Train'):
                     outputs = model(inputs)
                     loss = criterion(outputs, labels)
                     _, preds = torch.max(outputs, 1)
 
-                    # Backward + optimize in train phase.
+                    # Backward + optimize only in training phase.
                     if phase == 'Train':
                         loss.backward()
                         optimizer.step()
@@ -158,7 +160,7 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, num_epo
 
 def evaluate_model(model, dataloader, class_names):
     """
-    Evaluate the model on the test set, printing out accuracy, classification report and confusion matrix.
+    Evaluate the model on the test set, printing out accuracy, classification report, and confusion matrix.
     """
     model.eval()
     all_preds = []
@@ -185,7 +187,7 @@ def evaluate_model(model, dataloader, class_names):
 
 def main():
     # Set parameters.
-    data_dir = "Dataset"  # path to the dataset folder
+    data_dir = "Dataset"  # Path to the dataset folder.
     num_epochs = 10
     batch_size = 32
     input_size = 224
@@ -195,18 +197,20 @@ def main():
     dataloaders, dataset_sizes, class_names = get_data_loaders(data_dir, batch_size, input_size)
 
     # Initialize model.
-    # Here, we freeze most layers but unfreeze those in 'layer4' so the network can adapt more.
-    model = initialize_model(num_classes, feature_extract=True, fine_tune_from='layer4')
+    # Freeze most layers but unfreeze those in 'layer3' and 'layer4' so the network can adapt better.
+    model = initialize_model(num_classes, feature_extract=True, fine_tune_from_layers=['layer3', 'layer4'])
 
     # Define loss function.
     criterion = nn.CrossEntropyLoss()
 
     # Only update parameters that require gradients.
     params_to_update = [param for param in model.parameters() if param.requires_grad]
-    optimizer = optim.Adam(params_to_update, lr=0.001)
 
-    # Define a learning rate scheduler.
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+    # Optimizer with weight decay (L2 regularization).
+    optimizer = optim.Adam(params_to_update, lr=0.001, weight_decay=1e-4)
+
+    # Define a learning rate scheduler (Cosine Annealing).
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
 
     # Train the model.
     model = train_model(model, dataloaders, dataset_sizes, criterion, optimizer, num_epochs, scheduler)
