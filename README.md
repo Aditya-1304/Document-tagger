@@ -1,52 +1,126 @@
-<<<<<<< Updated upstream
-This is prototype for P-10
-=======
-# Document Tagger (P10)
+# Video Authenticity Checker
 
-A prototype for automatically tagging and organizing documents based on their content.
+A web-based application that classifies videos as **Real** or **Fake** using a pre-trained EfficientNet v2 B0 model. The system extracts key frames from a provided video URL, processes them through the model, and aggregates the predictions to determine the video's authenticity.
 
-## Project Overview
-This project aims to streamline document organization by implementing automated tagging functionality, making it easier to categorize and retrieve documents efficiently.
+## Table of Contents
 
-## Getting Started
+- [Features](#features)
+- [Architecture Overview](#architecture-overview)
+- [Demo](#demo)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+## Features
+
+- **Video URL Submission:** Users can input a video URL directly on the website
+- **Frame Extraction:** Extracts key frames from the video using OpenCV
+- **Model Inference:** Uses a pre-trained EfficientNet v2 B0 model for classifying each frame
+- **Prediction Aggregation:** Aggregates frame-level predictions for final decision
+- **Simple & Responsive UI:** Built with HTML, CSS, and JavaScript
+
+## Architecture Overview
+
+```
+[User Browser]
+    ↓
+[Front-end UI (HTML/CSS/JS)]
+    ↓ Video URL submission
+[Back-end API (Flask)]
+    ↓ Downloads video, extracts frames
+[Model Inference Engine (PyTorch)]
+    ↓
+[Aggregation & Response]
+    ↓
+[Result Displayed to User]
+```
+
+## Demo
+
+> **Note:** For demonstration purposes, the app currently processes videos stored locally or accessible via direct URLs.
+
+## Installation
 
 ### Prerequisites
-- Git
-- GitHub account
-- Access to the repository
 
-### Local Development Setup
+- Python 3.7+
+- pip
+- Git
+- FFmpeg (optional)
+
+### Setup
 
 1. Clone the repository:
+
 ```bash
-gh repo clone <repository-url>
+git clone https://github.com/yourusername/video-authenticity-checker.git
+cd video-authenticity-checker
 ```
 
-2. Create and switch to your feature branch:
+2. Create virtual environment:
+
 ```bash
-git checkout -b <your-branch-name>
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 ```
 
-3. Set up upstream tracking:
+3. Install dependencies:
+
 ```bash
-git branch --set-upstream-to=origin/<branch-name> <branch-name>
+pip install -r requirements.txt
 ```
 
-4. Push changes to your branch:
+## Usage
+
+1. Start the Flask server:
+
 ```bash
-git push
+python app.py
 ```
 
-## Contributing Guidelines
-1. Never push directly to the main branch
-2. Create feature branches for your work
-3. Submit Pull Requests to the development branch
-4. Wait for PR review and approval
+2. Open http://127.0.0.1:5000 in your browser
+3. Submit a video URL and click "Analyze Video"
 
-## Branch Structure
-- `main`: Production-ready code
-- `development`: Integration branch for features
-- `feature/*`: Individual feature branches
+## Project Structure
 
-For more information, please contact the repository maintainers.
->>>>>>> Stashed changes
+```
+video-authenticity-checker/
+├── app.py                     # Main Flask application
+├── templates/
+│   └── index.html            # Front-end UI
+├── static/
+│   ├── css/
+│   └── js/
+├── efficientnet_v2_b0.pth    # Pre-trained model
+└── requirements.txt
+```
+
+## Deployment
+
+Deploy on free platforms:
+
+- Heroku
+- Render
+- Replit
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/YourFeature`)
+3. Commit changes (`git commit -m "Add feature"`)
+4. Push to branch (`git push origin feature/YourFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgements
+
+- EfficientNet v2 developers
+- Flask, OpenCV, and PyTorch maintainers
